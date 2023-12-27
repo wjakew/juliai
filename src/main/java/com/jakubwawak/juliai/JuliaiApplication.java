@@ -20,7 +20,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class JuliaiApplication {
 
 	public static String version = "v1.0.0";
-	public static String build = "jai261223REV01";
+	public static String build = "jai271223REV01";
 
 	public static int debug = 0;
 	public static Configuration configuration;

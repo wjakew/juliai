@@ -75,7 +75,7 @@ public class GenerateView extends VerticalLayout {
         generate_area = new TextArea("Ask me anything...");
         generate_area.setSizeFull();
         generate_area.setPlaceholder("type your prompt here");
-        generate_button = new Button("Generate!", VaadinIcon.ACADEMY_CAP.create(),this::setGenerate_button2);
+        generate_button = new Button("Generate!", VaadinIcon.ACADEMY_CAP.create(),this::setGenerate_button);
         generate_button.setWidth("50%");
         generate_button.addThemeVariants(ButtonVariant.LUMO_CONTRAST,ButtonVariant.LUMO_PRIMARY);
 
@@ -163,7 +163,6 @@ public class GenerateView extends VerticalLayout {
                     JSONObject jsonObject = new JSONObject(line);
                     data.append(jsonObject.getString("response")); // Accumulate the response in the string builder
                     generate_area.setValue(data.toString());
-
                     System.out.println(data.toString());
                 }
             } catch (Exception e) {
