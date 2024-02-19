@@ -15,6 +15,7 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.Push;
+import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -42,6 +43,8 @@ public class GenerateView extends VerticalLayout {
     Button generate_button;
 
     VerticalLayout generate_layout;
+
+    ProgressBar progressBar;
 
     /**
      * Constructor
@@ -75,11 +78,14 @@ public class GenerateView extends VerticalLayout {
         generate_area = new TextArea("Ask me anything...");
         generate_area.setSizeFull();
         generate_area.setPlaceholder("type your prompt here");
-        generate_button = new Button("Generate!", VaadinIcon.ACADEMY_CAP.create(),this::setGenerate_button);
+        generate_button = new Button("Generate!", VaadinIcon.ACADEMY_CAP.create(),this::setGenerate_button2);
         generate_button.setWidth("50%");
         generate_button.addThemeVariants(ButtonVariant.LUMO_CONTRAST,ButtonVariant.LUMO_PRIMARY);
 
         generate_layout.add(generate_area);
+        progressBar = new ProgressBar();
+        progressBar.setIndeterminate(true);
+        progressBar.setValue(0);
     }
 
     /**
@@ -88,22 +94,25 @@ public class GenerateView extends VerticalLayout {
     void prepare_view(){
         prepare_components();
         add(new H6("juliai"));
+        add(progressBar);
         add(generate_layout);
         add(generate_button);
     }
 
     //--button action functions
     @Async
-    private void setGenerate_button(ClickEvent ex){
-        String prompt = generate_area.getValue();// Lock the Vaadin session for thread-safe access
+    private void setGenerate_button(ClickEvent ex) {
+        String prompt = generate_area.getValue(); // Lock the Vaadin session for thread-safe access
         UI ui = UI.getCurrent();
         if (!prompt.isEmpty()) {
-            generate_area.setValue(prompt); // Set the initial prompt text
+                ui.access(()->{
+                    generate_area.clear(); // clear the prompt
+                    generate_area.setTitle(prompt); // add a title to the
+                });
 
             // Create a separate thread to update the TextArea's content
             Thread updateThread = new Thread(() -> {
                 StringBuilder data = new StringBuilder();
-
                 try {
                     HttpURLConnection connection = (HttpURLConnection) new URL(JuliaiApplication.oacs.requestUrl + "/api/generate").openConnection();
                     connection.setRequestMethod("POST");
@@ -119,9 +128,10 @@ public class GenerateView extends VerticalLayout {
                         JSONObject jsonObject = new JSONObject(line);
                         data.append(jsonObject.getString("response")); // Accumulate the response in the string builder
 
-                        // Update the text area asynchronously on the main UI thre
-                        ui.access(()->{
+                        // Update the text area on the main UI thread (async)
+                        ui.access(() -> {
                             generate_area.setValue(data.toString());
+                            ui.push();
                         });
 
                         System.out.println(data.toString());
@@ -131,11 +141,11 @@ public class GenerateView extends VerticalLayout {
                 }
             });
 
-            try{
+            try {
                 VaadinSession.getCurrent().lock();
                 updateThread.start();
-            }finally {
-                // Lock the Vaadin session for thread-safe access
+            } finally {
+                // Unlock the Vaadin session for thread-safe access
                 VaadinSession.getCurrent().unlock();
             }
         } else {
@@ -143,9 +153,12 @@ public class GenerateView extends VerticalLayout {
         }
     }
 
+
     private void setGenerate_button2(ClickEvent ex){
+        progressBar.setValue(0);
         String prompt = generate_area.getValue();// Lock the Vaadin session for thread-safe access
         if (!prompt.isEmpty()) {
+            progressBar.setValue(1);
             StringBuilder data = new StringBuilder();
             generate_area.setValue(data.toString());
             try {
@@ -171,5 +184,6 @@ public class GenerateView extends VerticalLayout {
         } else {
             Notification.show("Prompt is empty!");
         }
+        progressBar.setValue(0);
     }
 }
